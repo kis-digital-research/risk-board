@@ -61,7 +61,6 @@ pyparsing==3.2.5
 pypdfium2==4.30.0
 python-dateutil==2.9.0.post0
 pytz==2025.2
-pywin32==311
 pyzmq==27.1.0
 referencing==0.36.2
 requests==2.32.3
@@ -83,3 +82,4 @@ tzdata==2025.2
 urllib3==2.5.0
 watchdog==4.0.2
 wcwidth==0.2.14
+
