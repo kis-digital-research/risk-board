@@ -21,23 +21,18 @@ st.markdown("""
     div[data-testid="stActionButton"] button[kind="header"]:nth-child(2) {
         display: none;
     }
-    /* 메뉴 버튼은 유지 */
+    /* 메뉴 버튼 유지 */
     span[data-testid="stMainMenu"] {
         display: block;
     }
-
-    /* ── 1️⃣ Streamlit 하단 "Made with Streamlit" 배너/버튼 제거 */
-    footer {visibility: hidden !important;}
-    section[data-testid="stDecoration"] {display: none !important;}
-    div[data-testid="stStatusWidget"] {display: none !important;}
-    
-    /* ── 2️⃣ 우하단 Streamlit 배포자 아이콘/왕관 제거 */
-    div[aria-label="View app author"] {display: none !important;}
-    a[href*="streamlit.app"] {display: none !important;}
-    button[title*="Streamlit"] {display: none !important;}
-    
-    /* ── 3️⃣ 혹시 모를 floating iframe 제거 */
-    iframe[src*="streamlit"] {display: none !important;}
+    /* Streamlit 배포자 계정 아이콘 숨기기 */
+    div[data-testid="appCreatorAvatar"] {
+        display: none;
+    }
+    /* Streamlit 링크 아이콘 숨기기 */
+    a[data-testid="viewerBadge"] {
+        display: none;
+    }
 
     .badge-low { background: #E8F5E9; color: #2E7D32; }     /* 안정 */
     .badge-mid { background: #FFFDE7; color: #F9A825; }     /* 중립 */
