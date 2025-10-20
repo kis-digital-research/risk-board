@@ -7,7 +7,18 @@ import time
 from hmmlearn.hmm import GaussianHMM
 import warnings
 warnings.filterwarnings("ignore")
-
+st.set_page_config(
+    page_title="우체국보험 리스크 스코어보드",   # 브라우저 탭 이름
+    page_icon="📊"
+)
+st.markdown("""
+<style>
+    .badge-low { background: #E8F5E9; color: #2E7D32; }     /* 안정 */
+    .badge-mid { background: #FFFDE7; color: #F9A825; }     /* 중립 */
+    .badge-high{ background: #FFEBEE; color: #C62828; }     /* 위험 */
+}
+</style>
+""", unsafe_allow_html=True)
 
 rename_dict = {
     'Date.1': 'Date',
@@ -66,33 +77,14 @@ rename_dict = {
     '국내 경기선행지수 순환변동치': '국내 경기선행지수 순환변동치_절대수치',
     '국내 경기선행지수 순환변동치.1': '국내 경기선행지수 순환변동치'
 }
-# df = pd.read_excel('data/리스크보드New_v3_rawdata.xlsx',sheet_name='종합_',header=5,usecols="BT:FR")
-df = pd.read_csv('data/리스크보드New_v4_rawdata.csv',header=5,usecols=list(rename_dict.keys()))
-df = df[pd.to_datetime(df['Date.1']) < datetime.today() - timedelta(days=1)]
-
-composite = df[['Date.1', '국내주식', '해외주식', '채권지수 ', 'FX 지수 ', '크레딧 지수 ', '국내 리스크종합지수.1', '글로벌 리스크종합지수.1']]
-composite.columns = ['Date','K_EQUITY','G_EQUITY','FI','FX','CREDIT','KRCI','GRCI']
-
-for c in ["K_EQUITY","G_EQUITY","FI","FX","CREDIT","KRCI","GRCI"]:
-    composite[c] = pd.to_numeric(composite[c], errors="coerce")
 
 def fit_hmm_posterior(series: pd.Series, n_states: int = 3, random_state: int = 100):
-    """
-    R(depmixS4)와 동일 컨셉:
-      - 3상태 가우시안 HMM
-      - 입력 series * 100 스케일
-      - posterior 확률 반환 (T x 3), 상태 평균으로 Low/Mid/High 라벨링
-    반환:
-      post_df: DataFrame [Low, Mid, High]
-      state_labels: Series('Low'/'Mid'/'High') - Viterbi 경로 라벨
-      means_dict: {'Low': µ_low, 'Mid': µ_mid, 'High': µ_high}
-      model: 학습된 GaussianHMM
-    """
+
     s = series.dropna()
     X = (s.values.reshape(-1, 1).astype(float) * 100.0)
     idx = s.index
 
-    model = GaussianHMM(n_components=n_states, covariance_type="full", random_state=random_state, n_iter=1000, tol=1e-6, init_params="stmcw")
+    model = GaussianHMM(n_components=n_states, covariance_type="diag", random_state=random_state, n_iter=200, tol=1e-6, init_params="stmcw")
     model.fit(X)
 
     # posterior(gamma)
@@ -138,32 +130,46 @@ def run_and_export(risk_df: pd.DataFrame, target_col: str, random_state: int = 1
     out.columns = ["Date", target_col, target_col+"_state", target_col+"_Low", target_col+"_Mid", target_col+"_High"]
     return out, means_dict, model
 
-grci_out, grci_means, grci_model = run_and_export(composite, "GRCI", random_state=100)
-krci_out, krci_means, krci_model = run_and_export(composite, "KRCI", random_state=100)
-
-rci = pd.merge(grci_out, krci_out, on="Date", how="left")
-
-df.rename(columns=rename_dict,inplace=True)
-risk_df = rci.dropna(subset=['KRCI'])
-
-risk_df['Date'] = pd.to_datetime(risk_df['Date'])
-risk_df = risk_df.sort_values('Date', ascending=False).reset_index(drop=True)
-exclude_cols = ['Date', 'GRCI_state', 'KRCI_state']
-for col in risk_df.columns:
-    if col not in exclude_cols:
-        risk_df[col] = pd.to_numeric(risk_df[col].astype(str).str.strip(), errors='coerce')
-
-econ_df = df.dropna(subset=['국내 리스크종합지수'])
-econ_df['Date'] = pd.to_datetime(econ_df['Date'])
-econ_df = econ_df.sort_values('Date', ascending=False).reset_index(drop=True)
-econ_df = econ_df.loc[:, ~econ_df.columns.duplicated()]
-for col in econ_df.columns:
-    if col != 'Date':
-        econ_df[col] = pd.to_numeric(econ_df[col].astype(str).str.strip(), errors='coerce')
-
 
 # 데이터 로드 함수
 @st.cache_data
+def load_and_preprocess_data():
+    df = pd.read_csv('data/리스크보드New_v4_rawdata.csv', header=5, usecols=list(rename_dict.keys()))
+    df = df[pd.to_datetime(df['Date.1']) < datetime.today() - timedelta(days=1)]
+    
+    
+    composite = df[['Date.1', '국내주식', '해외주식', '채권지수 ', 'FX 지수 ', '크레딧 지수 ', '국내 리스크종합지수.1', '글로벌 리스크종합지수.1']]
+    composite.columns = ['Date', 'K_EQUITY', 'G_EQUITY', 'FI', 'FX', 'CREDIT', 'KRCI', 'GRCI']
+    
+    for c in ["K_EQUITY", "G_EQUITY", "FI", "FX", "CREDIT", "KRCI", "GRCI"]:
+        composite[c] = pd.to_numeric(composite[c], errors="coerce")
+    
+    grci_out, grci_means, grci_model = run_and_export(composite, "GRCI", random_state=100)
+    krci_out, krci_means, krci_model = run_and_export(composite, "KRCI", random_state=100)
+    
+    rci = pd.merge(grci_out, krci_out, on="Date", how="left")
+    risk_df = rci.dropna(subset=['KRCI'])
+    risk_df['Date'] = pd.to_datetime(risk_df['Date'])
+    risk_df = risk_df.sort_values('Date', ascending=False).reset_index(drop=True)
+    
+    df.rename(columns=rename_dict, inplace=True)
+
+    econ_df = df.dropna(subset=['국내 리스크종합지수'])
+    econ_df['Date'] = pd.to_datetime(econ_df['Date'])
+    econ_df = econ_df.sort_values('Date', ascending=False).reset_index(drop=True)
+    econ_df = econ_df.loc[:, ~econ_df.columns.duplicated()]
+    
+    for col in risk_df.columns:
+        if col not in ['Date', 'GRCI_state', 'KRCI_state']:
+            risk_df[col] = pd.to_numeric(risk_df[col].astype(str).str.strip(), errors='coerce')
+    
+    for col in econ_df.columns:
+        if col != 'Date':
+            econ_df[col] = pd.to_numeric(econ_df[col].astype(str).str.strip(), errors='coerce')
+    
+    return risk_df, econ_df, grci_means, krci_means, grci_model, krci_model
+
+# 메인 함수에서 호출
 
 
 # 변화량 계산 및 표시 함수
@@ -193,18 +199,7 @@ def color_change(val):
 def bytes_csv(df: pd.DataFrame) -> bytes:
     return df.to_csv(index=False).encode("utf-8-sig")
         # 배지 CSS
-st.set_page_config(
-    page_title="우체국보험 리스크 스코어보드",   # 브라우저 탭 이름
-    page_icon="📊"
-)
-st.markdown("""
-<style>
-    .badge-low { background: #E8F5E9; color: #2E7D32; }     /* 안정 */
-    .badge-mid { background: #FFFDE7; color: #F9A825; }     /* 중립 */
-    .badge-high{ background: #FFEBEE; color: #C62828; }     /* 위험 */
-}
-</style>
-""", unsafe_allow_html=True)
+
 state_color = {'안정': '#2E7D32', '중립': '#F9A825', '위험': '#C62828'}
 
 k_indicators = [
@@ -381,6 +376,8 @@ def main():
     st.title("우체국보험 리스크 스코어보드")
     st.markdown("<div style='text-align: right; color: #909090;'>한국투자증권 리서치본부</div>", unsafe_allow_html=True)
     
+    risk_df, econ_df, grci_means, krci_means, grci_model, krci_model = load_and_preprocess_data()
+    
  # 사용 가능한 날짜 목록 (포맷팅)
     available_dates = risk_df['Date'].dt.strftime('%Y-%m-%d').unique()
     
@@ -391,7 +388,7 @@ def main():
         st.markdown("### 설정")
         selected_date_str = st.selectbox("기준일자 선택", available_dates)
         selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d')
-        selected_date_3y_ago = selected_date - pd.DateOffset(years=5)
+        selected_date_3y_ago = selected_date - pd.DateOffset(years=3)
         st.divider()
         st.markdown("**CSV 다운로드**")
         st.download_button(
