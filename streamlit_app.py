@@ -13,6 +13,19 @@ st.set_page_config(
 )
 st.markdown("""
 <style>
+    /* 1️⃣ 헤더 내부에서 "Fork" 또는 "GitHub" 텍스트가 포함된 버튼 숨기기 */
+    header [title*="GitHub"],
+    header [aria-label*="GitHub"],
+    header [title*="fork"],
+    header [aria-label*="fork"] {
+        display: none !important;
+    }
+    
+    /* 2️⃣ 나머지 메뉴(⋮) 버튼은 유지 */
+    header [data-testid="stActionButton"] {
+        display: flex !important;
+    }
+
     .badge-low { background: #E8F5E9; color: #2E7D32; }     /* 안정 */
     .badge-mid { background: #FFFDE7; color: #F9A825; }     /* 중립 */
     .badge-high{ background: #FFEBEE; color: #C62828; }     /* 위험 */
