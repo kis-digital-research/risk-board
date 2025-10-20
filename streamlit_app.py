@@ -26,7 +26,7 @@ st.markdown("""
         display: block;
     }
     /* Streamlit 배포자 계정 아이콘 숨기기 */
-    div[data-testid="appCreatorAvatar"] {
+    div[data-testid="_profilePreview_gzau3_63"] {
         display: none;
     }
     /* Streamlit 링크 아이콘 숨기기 */
