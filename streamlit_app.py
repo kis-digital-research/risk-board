@@ -39,6 +39,14 @@ st.markdown("""
         display: none;
     }
 
+    /* Streamlit 배포자 계정 아이콘 숨기기 */
+    div[class*="_profileContainer_gzau3_53"] {
+        display: none;
+    }
+    /* Streamlit 배포자 계정 아이콘 숨기기 */
+    div[class*="_profilePreview_gzau3_63"] {
+        display: none;
+    }
     .badge-low { background: #E8F5E9; color: #2E7D32; }     /* 안정 */
     .badge-mid { background: #FFFDE7; color: #F9A825; }     /* 중립 */
     .badge-high{ background: #FFEBEE; color: #C62828; }     /* 위험 */
