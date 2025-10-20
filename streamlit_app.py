@@ -13,33 +13,18 @@ st.set_page_config(
 )
 st.markdown("""
 <style>
-    /* ── GitHub / Fork 링크/아이콘만 숨기기 */
-    header [data-testid="stToolbar"] a[href*="github.com"],
-    header [data-testid="stToolbar"] a[aria-label*="GitHub"],
-    header [data-testid="stToolbar"] a[title*="GitHub"],
-    header [data-testid="stToolbar"] button[aria-label*="GitHub"],
-    header [data-testid="stToolbar"] button[title*="GitHub"],
-    header [data-testid="stToolbar"] span:has(svg[data-icon="github"]) {
-        display: none !important;
+    /* Fork 버튼 숨기기 */
+    div[data-testid="stActionButton"] button[kind="header"]:nth-child(1) {
+        display: none;
     }
-    
-    /* ── Fork 텍스트도 제거 */
-    header [data-testid="stToolbar"] span:contains("Fork") {
-        display: none !important;
+    /* GitHub 아이콘 버튼 숨기기 */
+    div[data-testid="stActionButton"] button[kind="header"]:nth-child(2) {
+        display: none;
     }
-    
-    /* ── 메뉴(⋮)는 반드시 남김 */
-    header [data-testid="stToolbar"] button[aria-label*="menu"],
-    header [data-testid="stToolbar"] button[data-testid="baseButton-secondary"] {
-        display: flex !important;
-        visibility: visible !important;
+    /* 메뉴 버튼은 유지 */
+    span[data-testid="stMainMenu"] {
+        display: block;
     }
-    
-    /* ── 간격 정리 */
-    header [data-testid="stToolbar"] {
-        gap: 6px !important;
-    }
-
     .badge-low { background: #E8F5E9; color: #2E7D32; }     /* 안정 */
     .badge-mid { background: #FFFDE7; color: #F9A825; }     /* 중립 */
     .badge-high{ background: #FFEBEE; color: #C62828; }     /* 위험 */
