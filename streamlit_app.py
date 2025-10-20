@@ -13,18 +13,31 @@ st.set_page_config(
 )
 st.markdown("""
 <style>
-    /* 1️⃣ 헤더 내부에서 "Fork" 또는 "GitHub" 텍스트가 포함된 버튼 숨기기 */
-    header [title*="GitHub"],
-    header [aria-label*="GitHub"],
-    header [title*="fork"],
-    header [aria-label*="fork"] {
+    /* ── 1) GitHub/Fork 링크/아이콘 숨기기: href/label/title 기반 */
+    header [data-testid="stToolbar"] a[href*="github.com"],
+    header [data-testid="stToolbar"] [aria-label*="GitHub"],
+    header [data-testid="stToolbar"] [title*="GitHub"],
+    header [data-testid="stToolbar"] [aria-label*="fork"],
+    header [data-testid="stToolbar"] [title*="fork"] {
         display: none !important;
     }
     
-    /* 2️⃣ 나머지 메뉴(⋮) 버튼은 유지 */
-    header [data-testid="stActionButton"] {
+    /* ── 2) (백업 플랜) GitHub/Fork가 stToolbar의 앞쪽 2개일 때 nth-child로 제거  */
+    header [data-testid="stToolbar"] > *:nth-child(1),
+    header [data-testid="stToolbar"] > *:nth-child(2) {
+        /* 위 1)이 안 먹을 때만 효과 — 메뉴는 보통 3번째라 남음 */
+        display: none !important;
+    }
+    
+    /* ── 3) 메뉴(⋮)는 강제로 유지 */
+    header [data-testid="stToolbar"] [data-testid="stActionButton"],
+    header [data-testid="stToolbar"] button[aria-label*="menu"],
+    header [data-testid="stToolbar"] button[title*="menu"] {
         display: flex !important;
     }
+    
+    /* ── 4) 레이아웃 간격 보정(선택) */
+    header [data-testid="stToolbar"] { gap: 6px !important; }
 
     .badge-low { background: #E8F5E9; color: #2E7D32; }     /* 안정 */
     .badge-mid { background: #FFFDE7; color: #F9A825; }     /* 중립 */
