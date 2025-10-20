@@ -47,6 +47,22 @@ st.markdown("""
     div[class*="_profilePreview_gzau3_63"] {
         display: none;
     }
+
+    /* Streamlit 배포자 계정 아이콘 숨기기 */
+    img[data-testid="appCreatorAvatar"] {
+        display: none !important;
+    }
+    div[class*="_profileContainer"] {
+        display: none !important;
+    }
+    div[class*="_profilePreview"] {
+        display: none !important;
+    }
+    /* Streamlit 링크 배지 숨기기 */
+    a[data-testid="viewerBadge"] {
+        display: none !important;
+    }
+    
     .badge-low { background: #E8F5E9; color: #2E7D32; }     /* 안정 */
     .badge-mid { background: #FFFDE7; color: #F9A825; }     /* 중립 */
     .badge-high{ background: #FFEBEE; color: #C62828; }     /* 위험 */
