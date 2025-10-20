@@ -486,8 +486,10 @@ def main():
         data = {
             '지표': indicators,
             '세부 리스크' : categories,
-            '현재': [f"{c:.2f}" if not np.isnan(c) else '-' for c in current],
+
             '이전': [f"{p:.2f}" if not np.isnan(p) else '-' for p in previous],
+            '현재': [f"{c:.2f}" if not np.isnan(c) else '-' for c in current],
+
             '변화': [get_change_symbol(c - p if not np.isnan(c) and not np.isnan(p) else np.nan) for c, p in zip(current, previous)]
         }
         df = pd.DataFrame(data)
@@ -549,8 +551,10 @@ def main():
             data = {
                 '지표': indicators,
                 '세부 리스크' : categories,
-                '현재': [f"{c:.2f}" if not np.isnan(c) else '-' for c in current],
+                
                 '이전': [f"{p:.2f}" if not np.isnan(p) else '-' for p in previous],
+                '현재': [f"{c:.2f}" if not np.isnan(c) else '-' for c in current],
+                
                 '변화': [get_change_symbol(c - p if not np.isnan(c) and not np.isnan(p) else np.nan) for c, p in zip(current, previous)]
             }
             df = pd.DataFrame(data)
