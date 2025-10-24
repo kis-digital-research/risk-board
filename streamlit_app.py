@@ -406,14 +406,14 @@ def main():
         # 섹션 이동 링크 추가
         st.markdown("### 리스크 섹션 바로가기")
         sections = [
-            ("  - 국내 리스크 종합지수 (KRCI)", "krci-section"),
-            ("  - 글로벌 리스크 종합지수 (GRCI)", "grci-section"),
-            ("  - 국내주식리스크", "k-equity-section"),
-            ("  - 글로벌주식리스크", "g-equity-section"),
-            ("  - 채권리스크", "fi-section"),
-            ("  - 외환리스크", "fx-section"),
-            ("  - 크레딧/유동성리스크", "cr-section"),
-            ("  - 대체투자리스크", "ai-section")
+            ("국내 리스크 종합지수 (KRCI)", "krci-section"),
+            ("글로벌 리스크 종합지수 (GRCI)", "grci-section"),
+            ("국내주식리스크", "k-equity-section"),
+            ("글로벌주식리스크", "g-equity-section"),
+            ("채권리스크", "fi-section"),
+            ("외환리스크", "fx-section"),
+            ("크레딧/유동성리스크", "cr-section"),
+            ("대체투자리스크", "ai-section")
         ]
         for section_name, section_id in sections:
             st.markdown(
