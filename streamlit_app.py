@@ -532,12 +532,9 @@ def main():
             )
             .properties(height=200)
         )
-
+        st.markdown(f'<div id="{RCI_name.lower()}-section"></div>', unsafe_allow_html=True)
         with st.container(border=True):
-            st.markdown(f'<div id="{RCI_name.lower()}-section"></div>', unsafe_allow_html=True)
-            for name, section_id in sections:
-                    if name == RCI_name:
-                        st.markdown(f'<div id="{section_id}"></div>', unsafe_allow_html=True)
+            
             # st.write("")
             st.markdown(f"<div style='display: flex; align-items: center;'>\
                             <img src='{RCI_IMJ_map[RCI_name]}' style='height: 32px; margin-right: 6px;'>\
@@ -587,11 +584,12 @@ def main():
             }
             df = pd.DataFrame(data)
             styled_df = df.style.applymap(color_change, subset=['변화'])
-
-            with st.container(border=True):
-                for name, section_id in sections:
+            for name, section_id in sections:
                     if name == RI_name:
                         st.markdown(f'<div id="{section_id}"></div>', unsafe_allow_html=True)
+                        
+            with st.container(border=True):
+                
                 # st.write("")
 
                 if RI_name != "대체투자리스크":
