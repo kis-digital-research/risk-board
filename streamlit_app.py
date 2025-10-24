@@ -25,7 +25,6 @@ st.markdown("""
     span[data-testid="stMainMenu"] {
         display: block;
     }
-    
     .badge-low { background: #E8F5E9; color: #2E7D32; }     /* 안정 */
     .badge-mid { background: #FFFDE7; color: #F9A825; }     /* 중립 */
     .badge-high{ background: #FFEBEE; color: #C62828; }     /* 위험 */
@@ -116,9 +115,9 @@ def fit_hmm_posterior(series: pd.Series, n_states: int = 3, random_state: int = 
     states = model.predict(X)
     state_labels = pd.Series([label_map[s] for s in states], index=idx, name="state")
 
-    means_dict = {lab: float(means[k]) for k, lab in zip(order, ["Low","Mid","High"])}
+    # means_dict = {lab: float(means[k]) for k, lab in zip(order, ["Low","Mid","High"])}
 
-    return post_df, state_labels, means_dict, model
+    return post_df, state_labels
 
 def run_and_export(risk_df: pd.DataFrame, target_col: str, random_state: int = 100):
     """
@@ -128,7 +127,7 @@ def run_and_export(risk_df: pd.DataFrame, target_col: str, random_state: int = 1
     """
     s = risk_df[target_col].astype(float)
     # R과 동일 개념
-    post, state_labels, means_dict, model = fit_hmm_posterior(s, n_states=3, random_state=random_state)
+    post, state_labels = fit_hmm_posterior(s, n_states=3, random_state=random_state)
 
     # R: probs$state와 동일 개념 (Viterbi 경로의 라벨)
     # R은 숫자 state를 쓰지만, 여기서는 해석을 위해 라벨 문자열 사용.
@@ -141,7 +140,7 @@ def run_and_export(risk_df: pd.DataFrame, target_col: str, random_state: int = 1
     out = out.reset_index().rename(columns={"Date": "Date"})  # Date 컬럼화
     out = out[["Date", target_col, "state", "Low", "Mid", "High"]]
     out.columns = ["Date", target_col, target_col+"_state", target_col+"_Low", target_col+"_Mid", target_col+"_High"]
-    return out, means_dict, model
+    return out
 
 
 # 데이터 로드 함수
@@ -157,8 +156,8 @@ def load_and_preprocess_data():
     for c in ["K_EQUITY", "G_EQUITY", "FI", "FX", "CREDIT", "KRCI", "GRCI"]:
         composite[c] = pd.to_numeric(composite[c], errors="coerce")
     
-    grci_out, grci_means, grci_model = run_and_export(composite, "GRCI", random_state=100)
-    krci_out, krci_means, krci_model = run_and_export(composite, "KRCI", random_state=100)
+    grci_out = run_and_export(composite, "GRCI", random_state=100)
+    krci_out = run_and_export(composite, "KRCI", random_state=100)
     
     rci = pd.merge(grci_out, krci_out, on="Date", how="left")
     risk_df = rci.dropna(subset=['KRCI'])
@@ -180,7 +179,7 @@ def load_and_preprocess_data():
         if col != 'Date':
             econ_df[col] = pd.to_numeric(econ_df[col].astype(str).str.strip(), errors='coerce')
     
-    return risk_df, econ_df, grci_means, krci_means, grci_model, krci_model
+    return risk_df, econ_df
 
 # 메인 함수에서 호출
 
@@ -389,7 +388,7 @@ def main():
     st.title("우체국보험 리스크 스코어보드")
     st.markdown("<div style='text-align: right; color: #909090;'>한국투자증권 리서치본부</div>", unsafe_allow_html=True)
     
-    risk_df, econ_df, grci_means, krci_means, grci_model, krci_model = load_and_preprocess_data()
+    risk_df, econ_df = load_and_preprocess_data()
     
  # 사용 가능한 날짜 목록 (포맷팅)
     available_dates = risk_df['Date'].dt.strftime('%Y-%m-%d').unique()
@@ -398,12 +397,36 @@ def main():
     st.write("")
   
     with st.sidebar:
-        st.markdown("### 설정")
-        selected_date_str = st.selectbox("기준일자 선택", available_dates)
+        st.markdown("### 기준일자 선택")
+        selected_date_str = st.selectbox("", available_dates)
         selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d')
         selected_date_3y_ago = selected_date - pd.DateOffset(years=3)
         st.divider()
-        st.markdown("**CSV 다운로드**")
+        
+        # 섹션 이동 링크 추가
+        st.markdown("### 리스크 섹션 바로가기")
+        sections = [
+            ("  - 국내 리스크 종합지수 (KRCI)", "krci-section"),
+            ("  - 글로벌 리스크 종합지수 (GRCI)", "grci-section"),
+            ("  - 국내주식리스크", "k-equity-section"),
+            ("  - 글로벌주식리스크", "g-equity-section"),
+            ("  - 채권리스크", "fi-section"),
+            ("  - 외환리스크", "fx-section"),
+            ("  - 크레딧/유동성리스크", "cr-section"),
+            ("  - 대체투자리스크", "ai-section")
+        ]
+        for section_name, section_id in sections:
+            st.markdown(
+                f"""
+                <a href="#{section_id}" onclick="document.getElementById('{section_id}').scrollIntoView({{behavior: 'smooth'}}); return false;">
+                    {section_name}
+                </a>
+                """,
+                unsafe_allow_html=True
+            )
+        st.divider()
+
+        st.markdown("### 데이터(.CSV) 다운로드")
         st.download_button(
             "리스크 지표 DATA",
             data=bytes_csv(risk_df),
@@ -417,11 +440,11 @@ def main():
             mime="text/csv"
         )
         st.divider()
-        st.caption("- 본 자료는 고객의 증권투자를 돕기 위하여 작성된 당사의 저작물로서 모든 저작권은 당사에게 있으며, 당사의 동의 없이 어떤 형태로든 복제, 배포, 전송, 변형할 수 없습니다.")
-        st.caption("- 본 자료는 리서치센터에서 수집한 자료 및 정보를 기초로 작성된 것이나 당사가 그 자료 및 정보의 정확성이나 완전성을 보장할 수는 없으므로 당사는 본 자료로써 고객의 투자 결과에 대한 어떠한 보장도 행하는 것이 아닙니다. 최종적 투자 결정은 고객의 판단에 기초한 것이며 본 자료는 투자 결과와 관련한 법적 분쟁에서 증거로 사용될 수 없습니다.")
-        st.caption("- 본 자료에 제시된 종목들은 리서치센터에서 수집한 자료 및 정보 또는 계량화된 모델을 기초로 작성된 것이나, 당사의 공식적인 의견과는 다를 수 있습니다.")
-        st.caption("- 이 자료에 게재된 내용들은 작성자의 의견을 정확하게 반영하고 있으며, 외부의 부당한 압력이나 간섭 없이 작성되었음을 확인합니다.")
-                                       
+        st.markdown("<p style='font-size: 10px; color:grey'> · 본 자료는 고객의 증권투자를 돕기 위하여 작성된 당사의 저작물로서 모든 저작권은 당사에게 있으며, 당사의 동의 없이 어떤 형태로든 복제, 배포, 전송, 변형할 수 없습니다.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size: 10px; color:grey'> · 본 자료는 리서치센터에서 수집한 자료 및 정보를 기초로 작성된 것이나 당사가 그 자료 및 정보의 정확성이나 완전성을 보장할 수는 없으므로 당사는 본 자료로써 고객의 투자 결과에 대한 어떠한 보장도 행하는 것이 아닙니다. 최종적 투자 결정은 고객의 판단에 기초한 것이며 본 자료는 투자 결과와 관련한 법적 분쟁에서 증거로 사용될 수 없습니다.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size: 10px; color:grey'> · 본 자료에 제시된 종목들은 리서치센터에서 수집한 자료 및 정보 또는 계량화된 모델을 기초로 작성된 것이나, 당사의 공식적인 의견과는 다를 수 있습니다.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size: 10px; color:grey'> · 이 자료에 게재된 내용들은 작성자의 의견을 정확하게 반영하고 있으며, 외부의 부당한 압력이나 간섭 없이 작성되었음을 확인합니다.</p>", unsafe_allow_html=True)
+                                  
 
     # 이전 날짜 찾기 (다음 행, 전주, 전월, 전년도)
     idx = risk_df[risk_df['Date'] == selected_date].index[0]
@@ -499,18 +522,23 @@ def main():
         chart_df = chart_df[['Date',RCI_name]]
         chart = (
             alt.Chart(chart_df)
-            .mark_line(color= state_color[state_label]
+            # .mark_line(color= state_color[state_label]
+            .mark_line(color= "grey"
             #         #    , point=alt.OverlayMarkDef(color=state_color[state_label])
                        )           
             .encode(
-                x=alt.X("Date:T", title=None),
-                y=alt.Y(f"{RCI_name}:Q", title=RCI_name, scale=alt.Scale(domain=[chart_df[RCI_name].min()*0.95, chart_df[RCI_name].max()*1.05]))  # ★ Y축 범위 지정
+                x=alt.X("Date:T", title=None, axis=alt.Axis(format="%Y-%m")),
+                y=alt.Y(f"{RCI_name}:Q", title=f"{RCI_name}_last 3 years", scale=alt.Scale(domain=[chart_df[RCI_name].min()*0.95, chart_df[RCI_name].max()*1.05]))  # ★ Y축 범위 지정
             )
             .properties(height=200)
         )
 
         with st.container(border=True):
-            st.write("")
+            st.markdown(f'<div id="{RCI_name.lower()}-section"></div>', unsafe_allow_html=True)
+            for name, section_id in sections:
+                    if name == RCI_name:
+                        st.markdown(f'<div id="{section_id}"></div>', unsafe_allow_html=True)
+            # st.write("")
             st.markdown(f"<div style='display: flex; align-items: center;'>\
                             <img src='{RCI_IMJ_map[RCI_name]}' style='height: 32px; margin-right: 6px;'>\
                             <h3 style=' align-items: center;'> {RCI_map[RCI_name]} : {current_risk[RCI_name]:.2f}</h3>\
@@ -528,7 +556,7 @@ def main():
                         </div>", unsafe_allow_html=True)
             st.altair_chart(chart, use_container_width=True)
             st.dataframe(styled_df,hide_index=True, width=1000)
-            st.write("")
+            # st.write("")
 
     def RISK_INDEX_SECTION(RI_name,indicators,categories):
             wow_change = "-"
@@ -554,14 +582,17 @@ def main():
                 
                 '이전': [f"{p:.2f}" if not np.isnan(p) else '-' for p in previous],
                 '현재': [f"{c:.2f}" if not np.isnan(c) else '-' for c in current],
-                
+
                 '변화': [get_change_symbol(c - p if not np.isnan(c) and not np.isnan(p) else np.nan) for c, p in zip(current, previous)]
             }
             df = pd.DataFrame(data)
             styled_df = df.style.applymap(color_change, subset=['변화'])
 
             with st.container(border=True):
-                st.write("")
+                for name, section_id in sections:
+                    if name == RI_name:
+                        st.markdown(f'<div id="{section_id}"></div>', unsafe_allow_html=True)
+                # st.write("")
 
                 if RI_name != "대체투자리스크":
                     st.markdown(f"<div style='display: flex; align-items: center;'>\
@@ -580,7 +611,7 @@ def main():
                     st.dataframe(styled_df,hide_index=True, width=1000, height=667)
                 else :
                     st.dataframe(styled_df,hide_index=True, width=1000)
-                st.write("")
+                # st.write("")
     st.subheader("종합 리스크지표", divider="grey")
     RCI_SECTION("KRCI",k_indicators,k_categories)    
     RCI_SECTION("GRCI",g_indicators,g_categories)
